@@ -264,6 +264,29 @@ body {
   to { opacity: 1; max-height: 2000px; }
 }
 
+/* Quick Action Row */
+.quick-row {
+  display: flex; gap: 8px; padding: 6px 12px;
+  flex-shrink: 0;
+}
+.quick-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 10px 4px; border-radius: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; min-width: 0;
+}
+.quick-btn:active { background: var(--card2); transform: scale(0.96); }
+.quick-btn-icon { font-size: 20px; }
+.quick-btn-label { white-space: nowrap; font-size: 12px; }
+.quick-btn-sub { font-size: 10px; color: var(--text3); }
+
+/* Home Page - flex layout to push quick-row to bottom, only when active */
+#page-home.active { display: flex; flex-direction: column; min-height: 100%; }
+#page-home.active .mv-hero-card { flex: 1; margin-bottom: 8px; }
+#page-home.active .quick-row { flex-shrink: 0; }
+#page-home.active .toggle-content { flex-shrink: 0; }
+
 /* Song Card List */
 .song-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
 .song-card {
@@ -822,8 +845,9 @@ body {
 
 /* MV Hero Card */
 .mv-hero-card {
-  margin: 8px 16px 4px;
-  height: 280px; border-radius: 16px;
+  margin: 8px 16px 0;
+  height: 340px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #2d1b69 0%, #1a1a3e 40%, #0d0d14 100%);
   position: relative; overflow: hidden; cursor: pointer;
 }
@@ -922,29 +946,35 @@ body {
         </div>
         <div class="mv-hero-play">▶</div>
       </div>
-      <!-- VIP MV 入口按钮 -->
-      <div class="section-toggle" onclick="toggleSection('mvSection')">
-        <div class="section-toggle-left">👑</div>
-        <div class="section-toggle-info">
-          <div class="section-toggle-title">VIP会员 · MV精选</div>
-          <div class="section-toggle-desc">4部精选MV等你来看</div>
-        </div>
-        <div class="section-toggle-arrow" id="mvSectionArrow">▼</div>
+      <!-- Quick Action Row -->
+      <div class="quick-row">
+        <button class="quick-btn" onclick="toggleSection('mvSection')">
+          <span class="quick-btn-icon">👑</span>
+          <span class="quick-btn-label">VIP会员</span>
+          <span class="quick-btn-sub">MV精选</span>
+        </button>
+        <button class="quick-btn" onclick="toggleSection('latestSection')">
+          <span class="quick-btn-icon">🔥</span>
+          <span class="quick-btn-label">最新创作</span>
+          <span class="quick-btn-sub">热门歌曲</span>
+        </button>
+        <button class="quick-btn" onclick="toggleSection('roomSection')">
+          <span class="quick-btn-icon">🎤</span>
+          <span class="quick-btn-label">听歌房</span>
+          <span class="quick-btn-sub">一起听歌</span>
+        </button>
       </div>
+      <!-- Expandable Content Panels -->
       <div class="toggle-content" id="mvSection" style="display:none">
+        <div class="section-header"><span class="section-title">👑 VIP会员 · MV精选</span></div>
         <div class="mv-showcase" id="mvShowcase"></div>
       </div>
-      <!-- 最新创作 入口按钮 -->
-      <div class="section-toggle" onclick="toggleSection('latestSection')">
-        <div class="section-toggle-left">🔥</div>
-        <div class="section-toggle-info">
-          <div class="section-toggle-title">最新创作</div>
-          <div class="section-toggle-desc">热门歌曲等你来听</div>
-        </div>
-        <div class="section-toggle-arrow" id="latestSectionArrow">▼</div>
-      </div>
       <div class="toggle-content" id="latestSection" style="display:none">
+        <div class="section-header"><span class="section-title">🔥 最新创作</span></div>
         <div class="song-list" id="songList"></div>
+      </div>
+      <div class="toggle-content" id="roomSection" style="display:none">
+        <div class="room-panel" id="roomPanel"></div>
       </div>
     </div>
 
@@ -1376,20 +1406,51 @@ function initBackHandler() {
 
 function restoreState(state) {
   if (navStack.length > 1) navStack.pop();
+  // Close any open panels first
+  ['mvSection','latestSection','roomSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   if (state === 'home' || state === 'square' || state === 'create' || state === 'messages' || state === 'profile') {
     switchTab(state);
   } else if (state === 'detail') {
     closeDetail();
   } else if (state === 'form') {
     closeCreateForm();
-  } else if (state === 'vip') {
-    showToast('已返回');
+  } else if (state === 'mvPanel' || state === 'latestPanel' || state === 'roomPanel') {
+    // panel already closed above, just ensure home tab
+    switchTab('home');
   }
 }
 
 function handleExitBack() {
+  // Check if any panel is open - close it first
+  const panels = ['mvSection','latestSection','roomSection'];
+  for (let i = 0; i < panels.length; i++) {
+    const el = document.getElementById(panels[i]);
+    if (el && el.style.display !== 'none') {
+      el.style.display = 'none';
+      history.pushState({nav:'home'}, '', '#!home');
+      return;
+    }
+  }
+  // Check if detail modal is open
+  const detailOverlay = document.getElementById('detailOverlay');
+  if (detailOverlay && detailOverlay.classList.contains('show')) {
+    closeDetail();
+    history.pushState({nav:'home'}, '', '#!home');
+    return;
+  }
+  // Check if create form is open
+  const formOverlay = document.getElementById('createFormOverlay');
+  if (formOverlay && formOverlay.classList.contains('show')) {
+    closeCreateForm();
+    history.pushState({nav:'home'}, '', '#!home');
+    return;
+  }
+  // Nothing open - show exit prompt
   if (!exitTimer) {
-    showToast('再按一次退出');
+    showToast('再按一次退出程序');
     exitTimer = setTimeout(function(){exitTimer=null;},1500);
     history.pushState({nav:'home'}, '', '#!home');
   }
@@ -1606,7 +1667,23 @@ function renderHome() {
       </div>
     </div>
   `).join('');
-}function updateHero() {
+
+  // Room panel
+  const room = document.getElementById('roomPanel');
+  if (room) {
+    room.innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:60px;margin-bottom:16px">🎤</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">听歌房</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px">和朋友们一起听歌，实时互动</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button onclick="showToast('🎤 创建房间功能即将上线')" style="padding:10px 24px;border-radius:20px;border:none;background:var(--accent);color:#000;font-size:14px;font-weight:700;cursor:pointer">🎤 创建房间</button>
+          <button onclick="showToast('🔍 加入房间功能即将上线')" style="padding:10px 24px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer">🔍 加入房间</button>
+        </div>
+      </div>`;
+  }
+}
+function updateHero() {
   const s = songs[0];
   document.getElementById('heroCover').textContent = coverEmojis[s.coverIdx];
   document.getElementById('heroCover').style.background = gradients[s.coverIdx % gradients.length];
@@ -2080,13 +2157,16 @@ function formatNum(n) {
 
 function toggleSection(id) {
   const el = document.getElementById(id);
-  const arrow = document.getElementById(id + 'Arrow');
+  const allPanels = ['mvSection','latestSection','roomSection'];
+  const navMap = {mvSection:'mvPanel', latestSection:'latestPanel', roomSection:'roomPanel'};
   if (el.style.display === 'none') {
+    // Close others
+    allPanels.forEach(p => { const e = document.getElementById(p); if(e&&p!==id) e.style.display = 'none'; });
     el.style.display = 'block';
-    if (arrow) arrow.classList.add('open');
+    if (navMap[id]) pushNav(navMap[id]);
+    setTimeout(() => el.scrollIntoView({behavior:'smooth',block:'nearest'}), 100);
   } else {
     el.style.display = 'none';
-    if (arrow) arrow.classList.remove('open');
   }
 }
 
