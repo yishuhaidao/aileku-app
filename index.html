@@ -236,6 +236,34 @@ body {
 .section-title { font-size: 16px; font-weight: 700; }
 .section-more { font-size: 12px; color: var(--text3); cursor: pointer; }
 
+/* Section Toggle Buttons */
+.section-toggle {
+  display: flex; align-items: center; gap: 12px;
+  margin: 10px 16px; padding: 14px 16px;
+  background: var(--card); border-radius: 14px;
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.2s;
+}
+.section-toggle:active { background: var(--card2); transform: scale(0.98); }
+.section-toggle-left {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(107,203,119,0.15), rgba(78,205,196,0.1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.section-toggle-info { flex: 1; }
+.section-toggle-title { font-size: 15px; font-weight: 700; }
+.section-toggle-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.section-toggle-arrow {
+  font-size: 12px; color: var(--text3); transition: transform 0.3s;
+}
+.section-toggle-arrow.open { transform: rotate(180deg); }
+.toggle-content { overflow: hidden; animation: slideDown 0.3s ease; }
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 2000px; }
+}
+
 /* Song Card List */
 .song-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
 .song-card {
@@ -894,12 +922,30 @@ body {
         </div>
         <div class="mv-hero-play">▶</div>
       </div>
-      <!-- VIP MV Showcase -->
-      <div class="section-header"><span class="section-title">👑 VIP会员 · MV精选</span><span class="section-more">查看全部 ›</span></div>
-      <div class="mv-showcase" id="mvShowcase"></div>
-      <!-- Latest creations -->
-      <div class="section-header"><span class="section-title">🔥 最新创作</span><span class="section-more">查看全部 ›</span></div>
-      <div class="song-list" id="songList"></div>
+      <!-- VIP MV 入口按钮 -->
+      <div class="section-toggle" onclick="toggleSection('mvSection')">
+        <div class="section-toggle-left">👑</div>
+        <div class="section-toggle-info">
+          <div class="section-toggle-title">VIP会员 · MV精选</div>
+          <div class="section-toggle-desc">4部精选MV等你来看</div>
+        </div>
+        <div class="section-toggle-arrow" id="mvSectionArrow">▼</div>
+      </div>
+      <div class="toggle-content" id="mvSection" style="display:none">
+        <div class="mv-showcase" id="mvShowcase"></div>
+      </div>
+      <!-- 最新创作 入口按钮 -->
+      <div class="section-toggle" onclick="toggleSection('latestSection')">
+        <div class="section-toggle-left">🔥</div>
+        <div class="section-toggle-info">
+          <div class="section-toggle-title">最新创作</div>
+          <div class="section-toggle-desc">热门歌曲等你来听</div>
+        </div>
+        <div class="section-toggle-arrow" id="latestSectionArrow">▼</div>
+      </div>
+      <div class="toggle-content" id="latestSection" style="display:none">
+        <div class="song-list" id="songList"></div>
+      </div>
     </div>
 
     <!-- SQUARE PAGE -->
@@ -2030,6 +2076,18 @@ function formatNum(n) {
   if (n >= 10000) return (n/10000).toFixed(1) + '万';
   if (n >= 1000) return (n/1000).toFixed(1) + 'k';
   return n.toString();
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + 'Arrow');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (arrow) arrow.classList.add('open');
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.classList.remove('open');
+  }
 }
 
 function showToast(msg) {
